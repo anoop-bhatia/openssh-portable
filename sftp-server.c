@@ -1761,7 +1761,10 @@ process_extended_get_users_groups_by_id(uint32_t id)
 		if ((r = sshbuf_get_u32(uids, &n)) != 0)
 			fatal_fr(r, "parse inner uid");
 		user_pw = getpwuid((uid_t)n);
-		name = user_pw == NULL ? "" : user_pw->pw_name;
+		if (user_pw == NULL && (uid_t)n == pw->pw_uid)
+			name = pw->pw_name;
+		else
+			name = user_pw == NULL ? "" : user_pw->pw_name;
 		debug3_f("uid %u => \"%s\"", n, name);
 		if ((r = sshbuf_put_cstring(usernames, name)) != 0)
 			fatal_fr(r, "assemble uid reply");
@@ -1771,7 +1774,10 @@ process_extended_get_users_groups_by_id(uint32_t id)
 		if ((r = sshbuf_get_u32(gids, &n)) != 0)
 			fatal_fr(r, "parse inner gid");
 		gr = getgrgid((gid_t)n);
-		name = gr == NULL ? "" : gr->gr_name;
+		if (gr == NULL && (gid_t)n == pw->pw_gid)
+			name = pw->pw_name;
+		else
+			name = gr == NULL ? "" : gr->gr_name;
 		debug3_f("gid %u => \"%s\"", n, name);
 		if ((r = sshbuf_put_cstring(groupnames, name)) != 0)
 			fatal_fr(r, "assemble gid reply");
