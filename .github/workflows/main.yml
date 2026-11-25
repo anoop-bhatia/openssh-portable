@@ -35,7 +35,7 @@ jobs:
           strip sftp-server
           ls -lh sftp-server
           file sftp-server
-          file sftp-server | grep -q "statically linked"
+          file sftp-server | grep -q "static-pie linked"
 
       - name: test passwd-less uid
         run: |
