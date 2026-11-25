@@ -1,0 +1,51 @@
+name: Build
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container: alpine:latest
+    steps:
+
+      - name: git for checkout
+        run: apk add --no-cache git
+
+      - uses: actions/checkout@v6
+
+      - name: deps
+        run: |
+          apk add --no-cache build-base autoconf automake libtool pkgconf \
+            openssl-dev openssl-libs-static zlib-dev zlib-static \
+            file util-linux
+
+      - name: autoreconf
+        run: autoreconf -fi
+
+      - name: configure
+        run: |
+
+          ./configure --without-pam --without-selinux --without-kerberos5 --without-libedit \
+            LDFLAGS="-static" || (cat config.log; exit 1)
+
+      - name: make
+        run: |
+          make -j2 sftp-server
+          strip sftp-server
+          ls -lh sftp-server
+          file sftp-server
+          file sftp-server | grep -q "statically linked"
+
+      - name: test passwd-less uid
+        run: |
+
+          HOME=/home/container USER=container timeout 2 \
+            setpriv --reuid=995 --regid=995 --clear-groups \
+            ./sftp-server < /dev/null
+
+      - name: upload exe
+        uses: actions/upload-artifact@v7
+        with:
+          name: sftp-server
+          path: sftp-server
